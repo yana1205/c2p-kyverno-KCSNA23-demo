@@ -1,0 +1,46 @@
+name: Result to OSCAL
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches: [ "na" ]
+
+  workflow_dispatch:
+
+jobs:
+  result-to-oscal:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/checkout@v3
+        with:
+          ref: results
+          path: tmp-results
+
+      - uses: ./.github/actions/install-c2pcli
+        with:
+          url: 'https://github.com/IBM/compliance-to-policy/releases/download/v0.1.0/compliance-to-policy_0.1.0_linux_amd64.tar.gz'
+
+      - id: create-c2p-config
+        uses: ./.github/actions/create-c2p-config
+        with:
+          compliance-component-definition-url: ./component-definitions/kube/component-definition.json
+          policy-resources-url: ./policy-resources/
+          policy-results-url: ./policy-reports/
+          
+      - name: Result to OSCAL
+        run: |
+          cp -r ./tmp-results/policy-reports .
+          c2pcli kyverno result2oscal -c ${{ steps.create-c2p-config.outputs.c2p-config }} -o ./assessment-results
+          rm -rf tmp-results
+
+      - uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Update assessment-results by C2P
+          delete-branch: true
+          title: Update assessment-results by C2P

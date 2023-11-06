@@ -1,0 +1,35 @@
+name: Clear all artifacts
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches: [ "do-not-trigger-by-any-git-event" ]
+    paths:
+      - "do-not-trigger-by-any-git-event"
+
+  workflow_dispatch:
+
+jobs:
+  clear:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+          
+      - name: Clear all artifacts
+        run: |
+          rm -rf ./component-definitions/*
+          rm -rf ./data/*.csv
+          rm -rf ./kyverno-policies/*
+          rm -rf ./policy-reports/*
+          rm -rf ./assessment-results/*
+          rm -rf ./compliance-report.md
+
+      - uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Clear all artifacts
+          delete-branch: true
+          title: Clear all artifacts

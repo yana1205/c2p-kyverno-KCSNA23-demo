@@ -1,0 +1,41 @@
+name: Generate Compliance Posture
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "assessment-results/**"
+
+  workflow_dispatch:
+
+jobs:
+  generate-compliance-posture:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/install-c2pcli
+        with:
+          url: 'https://github.com/IBM/compliance-to-policy/releases/download/v0.1.0/compliance-to-policy_0.1.0_linux_amd64.tar.gz'
+
+      - id: create-c2p-config
+        uses: ./.github/actions/create-c2p-config
+        with:
+          compliance-component-definition-url: ./component-definitions/kube/component-definition.json
+          policy-resources-url: ./policy-resources/
+          policy-results-url: ./policy-reports/
+          
+      - name: Generate Compliance Posture
+        run: |
+          c2pcli kyverno oscal2posture -c ${{ steps.create-c2p-config.outputs.c2p-config }} --assessment-results assessment-results/assessment-results.json -o compliance-report.md
+
+      - uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Generate compliance-posture by C2P
+          delete-branch: true
+          title: Generate compliance-posture by C2P

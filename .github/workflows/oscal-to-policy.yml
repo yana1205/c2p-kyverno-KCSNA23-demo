@@ -1,0 +1,41 @@
+name: OSCAL to Policy
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "component-definitions/**"
+
+  workflow_dispatch:
+
+jobs:
+  oscal-to-policy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/install-c2pcli
+        with:
+          url: 'https://github.com/IBM/compliance-to-policy/releases/download/v0.1.0/compliance-to-policy_0.1.0_linux_amd64.tar.gz'
+
+      - id: create-c2p-config
+        uses: ./.github/actions/create-c2p-config
+        with:
+          compliance-component-definition-url: ./component-definitions/kube/component-definition.json
+          policy-resources-url: ./policy-resources/
+          policy-results-url: ./policy-reports/
+          
+      - name: OSCAL to Policy
+        run: |
+          c2pcli kyverno oscal2policy -c ${{ steps.create-c2p-config.outputs.c2p-config }} -o ./kyverno-policies
+
+      - uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Update kyverno-policies by C2P
+          delete-branch: true
+          title: Update kyverno-policies by C2P

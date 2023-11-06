@@ -1,0 +1,39 @@
+name: Create C2P Config
+description: Create C2P Config
+inputs:
+  compliance-component-definition-url:
+    description: OSCAL Component Definition URL
+    default: ./oscal/component-definition.json
+    required: false
+  policy-resources-url:
+    description: Policy Resources URL
+    default: ./path/to/policy-resources/
+    required: false
+  policy-results-url:
+    description: Policy Results URL
+    default: ./path/to/policy-results/
+    required: false
+outputs:
+  c2p-config:
+    description: Path to C2P Config yaml
+    value: ${{ steps.c2p-config.outputs.c2p-config }}
+
+runs:
+  using: "composite"
+  
+  steps:
+  - id: c2p-config
+    name: Create C2P CR yaml
+    shell: bash
+    run: |
+      cat << EOL > ${{ runner.temp }}/c2p-config.yaml
+      compliance:
+        name: Compliance
+        componentDefinition:
+          url: ${{ inputs.compliance-component-definition-url }}
+      policyResources: 
+        url: ${{ inputs.policy-resources-url }}
+      policyResults: 
+        url: ${{ inputs.policy-results-url }}
+      EOL
+      echo "c2p-config=${{ runner.temp }}/c2p-config.yaml" >> $GITHUB_OUTPUT
